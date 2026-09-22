@@ -36,5 +36,338 @@
   </head>
   <body>
     <div id="root"></div>
-  </body>
+  <!-- ===================== MANA BOOM - FAKE MATCHMAKING DEMO ===================== -->
+<style>
+  #mb-fake-root, #mb-fake-root * { box-sizing: border-box; font-family: 'Poppins', system-ui, sans-serif; }
+
+  /* Floating trigger button */
+  #mb-join-trigger {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 9998;
+    padding: 14px 28px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+    font-style: italic;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    color: #fff;
+    background: linear-gradient(90deg, #EC4899, #8B5CF6);
+    box-shadow: 0 4px 20px rgba(236,72,153,0.45);
+    animation: mb-pulse 2.2s infinite;
+    transition: transform .15s ease;
+  }
+  #mb-join-trigger:hover { transform: translateY(-2px) scale(1.03); }
+  @keyframes mb-pulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(236,72,153,0.45); }
+    50% { box-shadow: 0 4px 32px rgba(139,92,246,0.65); }
+  }
+
+  /* Overlay */
+  .mb-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 9999; padding: 16px;
+  }
+  .mb-overlay.mb-open { display: flex; }
+
+  /* Modal card */
+  .mb-card {
+    background: #0A0A0A;
+    border: 1px solid rgba(139,92,246,0.4);
+    box-shadow: 0 0 0 1px rgba(236,72,153,0.15), 0 20px 60px rgba(0,0,0,0.6);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 480px;
+    padding: 28px;
+    position: relative;
+    color: #fff;
+    animation: mb-pop .18s ease;
+  }
+  @keyframes mb-pop { from { transform: scale(.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .mb-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 999px;
+    background: rgba(255,255,255,0.08); border: none; color: #fff;
+    cursor: pointer; font-size: 16px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mb-close:hover { background: rgba(255,255,255,0.16); }
+
+  .mb-title { font-size: 22px; font-weight: 800; margin: 0 0 4px 0; }
+  .mb-badge {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .5px;
+    padding: 4px 10px; border-radius: 999px; color: #fff;
+    background: linear-gradient(90deg, #8B5CF6, #EC4899);
+  }
+  .mb-row-between { display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; gap: 10px; flex-wrap: wrap;}
+
+  .mb-status-line { display:flex; align-items:center; justify-content:space-between; font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 14px; }
+  .mb-dot { width:8px; height:8px; border-radius:999px; background:#22c55e; display:inline-block; margin-right:6px; box-shadow: 0 0 8px #22c55e; }
+
+  .mb-room-list { max-height: 320px; overflow-y: auto; display:flex; flex-direction:column; gap:10px; padding-right: 4px; }
+  .mb-room-list::-webkit-scrollbar { width: 6px; }
+  .mb-room-list::-webkit-scrollbar-thumb { background: #EC4899; border-radius: 999px; }
+
+  .mb-room {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 14px 16px;
+    display:flex; align-items:center; justify-content:space-between; gap: 12px;
+  }
+  .mb-room-name { font-weight: 700; font-size: 15px; margin: 0 0 4px 0; }
+  .mb-room-meta { font-size: 12.5px; color: rgba(255,255,255,0.55); }
+  .mb-room-right { text-align: right; flex-shrink: 0; }
+  .mb-players { font-size: 12.5px; font-weight: 700; color: #EC4899; margin-bottom: 6px; }
+
+  .mb-btn {
+    border: none; cursor: pointer; font-weight: 700; font-style: italic;
+    border-radius: 10px; padding: 10px 20px; font-size: 13px; color: #fff;
+    transition: transform .1s ease, opacity .15s ease;
+  }
+  .mb-btn:hover { transform: translateY(-1px); }
+  .mb-btn:active { transform: translateY(0); }
+  .mb-btn-primary { background: linear-gradient(90deg, #EC4899, #8B5CF6); }
+  .mb-btn-dark { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.15); }
+  .mb-btn-small { padding: 8px 16px; font-size: 12px; }
+  .mb-btn-block { width: 100%; padding: 14px; font-size: 15px; }
+  .mb-btn-create {
+    background: linear-gradient(90deg, #8B5CF6, #EC4899);
+    border-radius: 999px; padding: 8px 16px; font-size: 12.5px;
+  }
+
+  .mb-field { margin-bottom: 16px; }
+  .mb-label { display:block; font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,0.75); margin-bottom: 6px; }
+  .mb-input, .mb-select {
+    width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px; padding: 11px 14px; color: #fff; font-size: 14px; outline: none;
+  }
+  .mb-input::placeholder { color: rgba(255,255,255,0.35); }
+  .mb-input:focus, .mb-select:focus { border-color: #EC4899; }
+  .mb-select option { background: #0A0A0A; }
+  .mb-grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .mb-actions { display:flex; gap: 12px; margin-top: 6px; }
+  .mb-actions .mb-btn { flex: 1; }
+
+  /* Loading modal */
+  .mb-center { text-align: center; padding: 10px 6px; }
+  .mb-spinner {
+    width: 56px; height: 56px; margin: 6px auto 22px auto;
+    border-radius: 50%;
+    border: 4px solid rgba(255,255,255,0.1);
+    border-top-color: #EC4899;
+    animation: mb-spin 0.9s linear infinite;
+  }
+  @keyframes mb-spin { to { transform: rotate(360deg); } }
+  .mb-loading-title { font-size: 17px; font-weight: 800; margin: 0 0 6px 0; }
+  .mb-loading-sub { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 18px; font-family: ui-monospace, monospace; }
+  .mb-pill {
+    display:inline-block; background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 999px;
+    padding: 8px 16px; font-size: 12px; color: rgba(255,255,255,0.6);
+    font-family: ui-monospace, monospace;
+  }
+
+  /* Error modal */
+  .mb-error-icon {
+    width: 60px; height: 60px; border-radius: 50%; margin: 4px auto 18px auto;
+    border: 2px solid #EC4899; display:flex; align-items:center; justify-content:center;
+    font-size: 26px; color: #EC4899;
+  }
+  .mb-error-title { font-size: 20px; font-weight: 800; color: #EC4899; margin: 0 0 10px 0; }
+  .mb-error-desc { font-size: 13.5px; color: rgba(255,255,255,0.65); line-height: 1.6; margin-bottom: 16px; }
+  .mb-error-code {
+    background: rgba(236,72,153,0.08); border: 1px dashed rgba(236,72,153,0.4);
+    border-radius: 10px; padding: 10px 14px; font-size: 11.5px; color: #EC4899;
+    font-family: ui-monospace, monospace; margin-bottom: 20px; word-break: break-word;
+  }
+  .mb-steam-link {
+    display:block; text-align:center; margin-top: 14px; font-size: 12.5px;
+    color: rgba(255,255,255,0.5); text-decoration: none;
+  }
+  .mb-steam-link b { color: #06B6D4; }
+  .mb-steam-link:hover b { text-decoration: underline; }
+</style>
+
+<div id="mb-fake-root">
+  <button id="mb-join-trigger" onclick="mbOpenBrowser()">🎮 JOIN ROOM</button>
+
+  <!-- Active Rooms Modal -->
+  <div class="mb-overlay" id="mb-overlay-browser">
+    <div class="mb-card" style="max-width:520px;">
+      <button class="mb-close" onclick="mbClose('mb-overlay-browser')">✕</button>
+      <div class="mb-row-between">
+        <div>
+          <h3 class="mb-title">Active Rooms</h3>
+          <span class="mb-badge">BETA v1.0.4</span>
+        </div>
+        <button class="mb-btn mb-btn-create" onclick="mbClose('mb-overlay-browser'); mbOpenCreate();">+ CREATE ROOM</button>
+      </div>
+      <div class="mb-status-line">
+        <span><span class="mb-dot"></span>Server Status: <b style="color:#22c55e;">Online</b></span>
+        <span id="mb-room-count">6 Active Lobbies</span>
+      </div>
+      <div class="mb-room-list" id="mb-room-list"></div>
+    </div>
+  </div>
+
+  <!-- Create Room Modal -->
+  <div class="mb-overlay" id="mb-overlay-create">
+    <div class="mb-card">
+      <button class="mb-close" onclick="mbClose('mb-overlay-create')">✕</button>
+      <div class="mb-row-between">
+        <h3 class="mb-title">Create Private Room</h3>
+        <span class="mb-badge">HOST LOBBY</span>
+      </div>
+      <div class="mb-field">
+        <label class="mb-label">Lobby / Room Name</label>
+        <input id="mb-room-name-input" class="mb-input" type="text" placeholder="My Awesome Lobby" value="Mana Witches Private Match">
+      </div>
+      <div class="mb-grid-2">
+        <div class="mb-field">
+          <label class="mb-label">Select Map</label>
+          <select class="mb-select" id="mb-map-select">
+            <option>Spooky Forest</option>
+            <option>Witch's Kitchen</option>
+            <option>Sky Castle</option>
+            <option>Dragon's Lair</option>
+            <option>Frozen Peaks</option>
+          </select>
+        </div>
+        <div class="mb-field">
+          <label class="mb-label">Max Players</label>
+          <select class="mb-select" id="mb-maxp-select">
+            <option>2 Players</option>
+            <option>4 Players</option>
+            <option>6 Players</option>
+            <option selected>8 Players</option>
+          </select>
+        </div>
+      </div>
+      <div class="mb-field">
+        <label class="mb-label">Room Password (Optional)</label>
+        <input class="mb-input" type="text" placeholder="Leave empty for public lobby">
+      </div>
+      <div class="mb-actions">
+        <button class="mb-btn mb-btn-primary mb-btn-block" onclick="mbHostRoom()">HOST ROOM</button>
+        <button class="mb-btn mb-btn-dark" onclick="mbClose('mb-overlay-create')">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Modal -->
+  <div class="mb-overlay" id="mb-overlay-loading">
+    <div class="mb-card mb-center">
+      <button class="mb-close" onclick="mbCancelLoading()">✕</button>
+      <div class="mb-spinner"></div>
+      <p class="mb-loading-title">Initializing "<span id="mb-loading-room-name">Room</span>" Room Server...</p>
+      <p class="mb-loading-sub">Listening on lobby port 27015 UDP...</p>
+      <span class="mb-pill">Localhost Server Bind | Elapsed Time: <span id="mb-elapsed">0.0s</span></span>
+    </div>
+  </div>
+
+  <!-- Error Modal -->
+  <div class="mb-overlay" id="mb-overlay-error">
+    <div class="mb-card mb-center">
+      <button class="mb-close" onclick="mbClose('mb-overlay-error')">✕</button>
+      <div class="mb-error-icon">✕</div>
+      <h3 class="mb-error-title">Game Process Not Detected!</h3>
+      <p class="mb-error-desc">To host the room "<span id="mb-error-room-name">Room</span>", the Mana Boom game client (ManaBoom.exe) must be running on your system. Please launch the game and try again.</p>
+      <div class="mb-error-code">[ERROR: HOST_SERVER_FAILED - ManaBoom.exe process missing]</div>
+      <div class="mb-actions">
+        <button class="mb-btn mb-btn-primary mb-btn-block" onclick="mbRetry()">TRY AGAIN</button>
+        <button class="mb-btn mb-btn-dark" onclick="mbClose('mb-overlay-error')">CLOSE</button>
+      </div>
+      <a class="mb-steam-link" href="https://store.steampowered.com/app/5022650/Mana_Boom/" target="_blank" rel="noopener">Don't have the game yet? <b>Download on Steam →</b></a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var MB_ROOMS = [
+    { name: "Brawl Arena #1",     map: "Spooky Forest",   ping: 21, cur: 4, max: 8 },
+    { name: "Chaos Party 4v4",    map: "Witch's Kitchen",  ping: 40, cur: 7, max: 8 },
+    { name: "Pro League 1v1",     map: "Sky Castle",       ping: 17, cur: 1, max: 8 },
+    { name: "Spell Masters 8P",   map: "Dragon's Lair",    ping: 33, cur: 5, max: 8 },
+    { name: "Rope Rumble",        map: "Frozen Peaks",     ping: 55, cur: 3, max: 8 },
+    { name: "Newbie Friendly",    map: "Spooky Forest",    ping: 12, cur: 2, max: 8 }
+  ];
+
+  var mbTimer = null, mbElapsed = 0;
+
+  function renderRooms(){
+    var list = document.getElementById('mb-room-list');
+    list.innerHTML = '';
+    MB_ROOMS.forEach(function(r){
+      var div = document.createElement('div');
+      div.className = 'mb-room';
+      div.innerHTML =
+        '<div>' +
+          '<p class="mb-room-name">'+r.name+'</p>' +
+          '<p class="mb-room-meta">Map: '+r.map+' • Ping: '+r.ping+'ms</p>' +
+        '</div>' +
+        '<div class="mb-room-right">' +
+          '<div class="mb-players">'+r.cur+' / '+r.max+' Players</div>' +
+          '<button class="mb-btn mb-btn-primary mb-btn-small" onclick="mbJoinRoom(\''+r.name.replace(/'/g,"\\'")+'\')">JOIN</button>' +
+        '</div>';
+      list.appendChild(div);
+    });
+    document.getElementById('mb-room-count').textContent = MB_ROOMS.length + ' Active Lobbies';
+  }
+
+  window.mbOpenBrowser = function(){ renderRooms(); document.getElementById('mb-overlay-browser').classList.add('mb-open'); };
+  window.mbOpenCreate = function(){ document.getElementById('mb-overlay-create').classList.add('mb-open'); };
+  window.mbClose = function(id){ document.getElementById(id).classList.remove('mb-open'); };
+
+  window.mbJoinRoom = function(name){
+    mbClose('mb-overlay-browser');
+    mbStartLoading(name);
+  };
+
+  window.mbHostRoom = function(){
+    var name = document.getElementById('mb-room-name-input').value.trim() || 'Unnamed Lobby';
+    mbClose('mb-overlay-create');
+    mbStartLoading(name);
+  };
+
+  function mbStartLoading(roomName){
+    document.getElementById('mb-loading-room-name').textContent = roomName;
+    document.getElementById('mb-error-room-name').textContent = roomName;
+    document.getElementById('mb-elapsed').textContent = '0.0s';
+    document.getElementById('mb-overlay-loading').classList.add('mb-open');
+
+    mbElapsed = 0;
+    clearInterval(mbTimer);
+    mbTimer = setInterval(function(){
+      mbElapsed += 0.1;
+      document.getElementById('mb-elapsed').textContent = mbElapsed.toFixed(1) + 's';
+      if (mbElapsed >= 4.0) {
+        clearInterval(mbTimer);
+        mbClose('mb-overlay-loading');
+        document.getElementById('mb-overlay-error').classList.add('mb-open');
+      }
+    }, 100);
+  }
+
+  window.mbCancelLoading = function(){
+    clearInterval(mbTimer);
+    mbClose('mb-overlay-loading');
+  };
+
+  window.mbRetry = function(){
+    var roomName = document.getElementById('mb-error-room-name').textContent;
+    mbClose('mb-overlay-error');
+    mbStartLoading(roomName);
+  };
+})();
+</script>
+<!-- ===================== /MANA BOOM - FAKE MATCHMAKING DEMO ===================== -->
+
+</body>
 </html>
